@@ -1,3 +1,5 @@
+
+
 if (!window.__videoSpeedScriptInjected) {
     window.__videoSpeedScriptInjected = true;
 
@@ -22,7 +24,6 @@ if (!window.__videoSpeedScriptInjected) {
     function findVideosInDocument(doc = document) {
         let videos = Array.from(doc.querySelectorAll("video"));
 
-        // Also check inside shadow DOMs (YouTube Shorts, etc.)
         document.querySelectorAll("*").forEach(el => {
             if (el.shadowRoot) {
                 videos.push(...el.shadowRoot.querySelectorAll("video"));
@@ -35,15 +36,35 @@ if (!window.__videoSpeedScriptInjected) {
     function applySpeed(speed) {
         const videos = findVideosInDocument();
 
+        // DRM/custom platforms where speed control doesn't work
+        const unsupportedPlatforms = [
+            "hotstar.com",
+            "netflix.com",
+            "primevideo.com",
+            "sonyliv.com",
+            "disneyplus.com",
+            "jio.com",
+            "zee5.com"
+        ];
+
+        const host = location.hostname;
+
+        if (unsupportedPlatforms.some(site => host.includes(site))) {
+            showUnsupportedUI();
+            return;
+        }
+
         if (videos.length === 0) {
-            if (!location.hostname.includes("meet.google.com")) {
-                console.warn("No videos found. Stopping execution.");
-            }
+            console.info("No videos detected on this page.");
             return;
         }
 
         videos.forEach(video => {
-            video.playbackRate = speed;
+            try {
+                video.playbackRate = speed;
+            } catch (e) {
+                console.warn("⚠️ Couldn't apply speed to a video element:", e);
+            }
         });
 
         console.log(`✅ Speed applied: ${speed}x`);
@@ -72,6 +93,27 @@ if (!window.__videoSpeedScriptInjected) {
         speedUI.innerText = `🎥 Speed: ${speed.toFixed(1)}x`;
     }
 
+    function showUnsupportedUI() {
+        let speedUI = document.getElementById("speedUI");
+        if (!speedUI) {
+            speedUI = document.createElement("div");
+            speedUI.id = "speedUI";
+            speedUI.style.cssText = `
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background: rgba(255, 0, 0, 0.8);
+                color: white;
+                padding: 8px;
+                border-radius: 5px;
+                z-index: 9999;
+                font-size: 14px;
+            `;
+            document.body.appendChild(speedUI);
+        }
+        speedUI.innerText = "⚠️ Speed control not supported on this platform.";
+    }
+
     function checkAndApplySpeed() {
         const videos = findVideosInDocument();
         if (videos.length > 0) {
@@ -83,7 +125,6 @@ if (!window.__videoSpeedScriptInjected) {
                     }
                 });
             });
-
             if (checkInterval) {
                 clearInterval(checkInterval);
                 checkInterval = null;
@@ -116,7 +157,7 @@ if (!window.__videoSpeedScriptInjected) {
     observer.observe(document.body, { childList: true, subtree: true });
 
     document.addEventListener("keydown", function (event) {
-        if (event.ctrlKey && event.shiftKey && event.key === 'ArrowUp') {
+        if (event.ctrlKey && event.shiftKey && event.key === "ArrowUp") {
             let currentSpeed = window.__lastKnownSpeed || 1.0;
             let newSpeed = Math.min(Math.round((currentSpeed + 0.1) * 10) / 10, 10.0);
             window.__lastKnownSpeed = newSpeed;
@@ -126,7 +167,7 @@ if (!window.__videoSpeedScriptInjected) {
             applySpeed(newSpeed);
         }
 
-        if (event.ctrlKey && event.shiftKey && event.key === 'ArrowDown') {
+        if (event.ctrlKey && event.shiftKey && event.key === "ArrowDown") {
             let currentSpeed = window.__lastKnownSpeed || 1.0;
             let newSpeed = Math.max(Math.round((currentSpeed - 0.1) * 10) / 10, 0.1);
             window.__lastKnownSpeed = newSpeed;
