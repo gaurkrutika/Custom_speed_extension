@@ -11,7 +11,7 @@ Easily control the playback speed of videos on **any website** using keyboard sh
 - 🎛️ Set speed from popup window
 - 🧠 Remembers your last used speed
 - 📦 Works on platforms like YouTube, Coursera, Google Drive, ZEE5, etc.
-- 🪄 MutationObserver support for late-loaded or dynamically rendered videos
+
 
 ---
 
